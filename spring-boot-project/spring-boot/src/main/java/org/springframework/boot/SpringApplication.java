@@ -308,11 +308,15 @@ public class SpringApplication {
 			ConfigurableEnvironment environment = prepareEnvironment(listeners, applicationArguments);
 			configureIgnoreBeanInfo(environment);
 			Banner printedBanner = printBanner(environment);
+			// 创建应用上下文（包含IOC容器）
 			context = createApplicationContext();
 			exceptionReporters = getSpringFactoriesInstances(SpringBootExceptionReporter.class,
 					new Class[] { ConfigurableApplicationContext.class }, context);
+			// 准备应用上下文
 			prepareContext(context, environment, listeners, applicationArguments, printedBanner);
+			// 刷新应用上下文
 			refreshContext(context);
+			// 应用上下文善后工作
 			afterRefresh(context, applicationArguments);
 			stopWatch.stop();
 			if (this.logStartupInfo) {
@@ -366,30 +370,45 @@ public class SpringApplication {
 	private void prepareContext(ConfigurableApplicationContext context, ConfigurableEnvironment environment,
 			SpringApplicationRunListeners listeners, ApplicationArguments applicationArguments, Banner printedBanner) {
 		context.setEnvironment(environment);
+		// 上下文环境或容器设置一些属性
 		postProcessApplicationContext(context);
+		// 应用前面得到的初始化器
 		applyInitializers(context);
+		// 向监听器发送上下文准备完成事件
 		listeners.contextPrepared(context);
+
+		// 打印日志信息
 		if (this.logStartupInfo) {
 			logStartupInfo(context.getParent() == null);
 			logStartupProfileInfo(context);
 		}
+
 		// Add boot specific singleton beans
-		ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
+		ConfigurableListableBeanFactory beanFactory = context.getBeanFactory(); // IOC容器
+		// 将启动参数封装成bean，然后注册成单例bean.
 		beanFactory.registerSingleton("springApplicationArguments", applicationArguments);
 		if (printedBanner != null) {
+			// 注册用于打印banner的单例bean
 			beanFactory.registerSingleton("springBootBanner", printedBanner);
 		}
 		if (beanFactory instanceof DefaultListableBeanFactory) {
+			// 允许覆盖已经定义的BeanDefinition
 			((DefaultListableBeanFactory) beanFactory)
 					.setAllowBeanDefinitionOverriding(this.allowBeanDefinitionOverriding);
 		}
 		if (this.lazyInitialization) {
+			// 延迟初始化
+			// 给容器增加用于延迟初始化的BeanFactoryPostProcessor
 			context.addBeanFactoryPostProcessor(new LazyInitializationBeanFactoryPostProcessor());
 		}
 		// Load the sources
-		Set<Object> sources = getAllSources();
+		Set<Object> sources = getAllSources(); // 核心启动类
 		Assert.notEmpty(sources, "Sources must not be empty");
+
+		// 加载核心启动类，将启动类转换成bean注册到IOC容器中
 		load(context, sources.toArray(new Object[0]));
+
+		//
 		listeners.contextLoaded(context);
 	}
 
@@ -607,6 +626,7 @@ public class SpringApplication {
 			}
 		}
 		if (this.addConversionService) {
+			// 给Spring容器设置类型转换器
 			context.getBeanFactory().setConversionService(ApplicationConversionService.getSharedInstance());
 		}
 	}
@@ -678,6 +698,7 @@ public class SpringApplication {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Loading source " + StringUtils.arrayToCommaDelimitedString(sources));
 		}
+		// 创建BeanDefinitionLoader用来加载BeanDefinition
 		BeanDefinitionLoader loader = createBeanDefinitionLoader(getBeanDefinitionRegistry(context), sources);
 		if (this.beanNameGenerator != null) {
 			loader.setBeanNameGenerator(this.beanNameGenerator);

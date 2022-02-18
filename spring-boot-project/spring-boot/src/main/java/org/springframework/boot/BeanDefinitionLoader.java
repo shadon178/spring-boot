@@ -78,13 +78,18 @@ class BeanDefinitionLoader {
 	BeanDefinitionLoader(BeanDefinitionRegistry registry, Object... sources) {
 		Assert.notNull(registry, "Registry must not be null");
 		Assert.notEmpty(sources, "Sources must not be empty");
-		this.sources = sources;
+		this.sources = sources; // 应用启动类
+		// AnnotatedBeanDefinitionReader 用来读取注解的BeanDefinition
 		this.annotatedReader = new AnnotatedBeanDefinitionReader(registry);
+		// XmlBeanDefinitionReader 用来读取XML的BeanDefinition
 		this.xmlReader = new XmlBeanDefinitionReader(registry);
 		if (isGroovyPresent()) {
+			// GroovyBeanDefinitionReader 用来读取Groovy的BeanDefinition
 			this.groovyReader = new GroovyBeanDefinitionReader(registry);
 		}
+		// 类路径扫描器
 		this.scanner = new ClassPathBeanDefinitionScanner(registry);
+		// 扫描器增加类排除过滤器
 		this.scanner.addExcludeFilter(new ClassExcludeFilter(sources));
 	}
 
